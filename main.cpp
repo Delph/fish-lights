@@ -14,8 +14,12 @@ const size_t NUM_LEDS = 12;
 CRGB leds[NUM_LEDS];
 
 const uint32_t CORRECTION = 0xffffff;
+uint8_t brightness = 63;
 
 bool on = true;
+const uint8_t RESET_TIME = 2;
+const uint8_t ON_TIME = 8;
+const uint8_t OFF_TIME = 20;
 
 enum Button
 {
@@ -159,7 +163,7 @@ void setup()
 
   // add LEDs
   FastLED.addLeds<WS2812, PIN_LEDS, GRB>(leds, NUM_LEDS).setCorrection(CORRECTION);
-  FastLED.setBrightness(63);
+  FastLED.setBrightness(brightness);
 
   // setup ir
   if (!remote.begin(PIN_IR))
@@ -232,7 +236,9 @@ void loop()
       }
       else
       {
-        FastLED.setBrightness(min(FastLED.getBrightness() + 64, 255));
+        brightness = min(brightness + 64, 255);
+        // set it here, if we need reduce it because of time, that'll happen anyway
+        FastLED.setBrightness(brightness);
       }
     break;
     case Button::BRIGHTNESS_DEC:
@@ -265,7 +271,9 @@ void loop()
       }
       else
       {
-        FastLED.setBrightness(max(FastLED.getBrightness() - 64, 63));
+        brightness = max(brightness - 64, 63);
+        // set it here, if we need reduce it because of time, that'll happen anyway
+        FastLED.setBrightness(brightness);
       }
     break;
     case Button::WHITE:
@@ -314,10 +322,15 @@ void loop()
   }
 
   const DateTime dt = rtc.getDateTimeDST();
-  if (on == false && dt.hours == 2)
+  if (on == false && dt.hours == RESET_TIME)
     on = true;
-  if (on && dt.hours >= 7 && dt.hours <= 22)
+  if (on && dt.hours >= ON_TIME && dt.hours <= OFF_TIME)
   {
+    if (dt.hours == ON_TIME || dt.hours == OFF_TIME)
+    {
+      const uint8_t factor = (dt.hours == ON_TIME ? 59 - dt.minutes : dt.minutes) / 8;
+      FastLED.setBrightness(brightness / factor);
+    }
     switch (lightMode)
     {
       case LightMode::SOLID:
@@ -379,6 +392,7 @@ void loop()
   {
     fill_solid(leds, NUM_LEDS, CRGB::Black);
   }
+
 
   FastLED.show();
 
