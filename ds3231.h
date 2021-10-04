@@ -141,7 +141,7 @@ struct DateTime
     }
     while (hours >= 24)
     {
-      hours -= 4;
+      hours -= 24;
       day += 1;
     }
     while (day < 1) // < 1 is not a bug
@@ -232,7 +232,7 @@ public:
     const int8_t hour = twi->read();
     const bool h12 = hour & 0b01000000;
     if (h12)
-      dt.hours = bcd_decode(hour & 0b11111) + (hour & 0b01000000 ? 12 : 0);
+      dt.hours = bcd_decode(hour & 0b11111) + (hour & 0b00100000 ? 12 : 0);
     else
       dt.hours = bcd_decode(hour & 0b111111);
     dt.wday = bcd_decode(twi->read());
